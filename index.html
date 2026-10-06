@@ -23,14 +23,15 @@ header{display:flex;align-items:center;justify-content:space-between;margin-bott
 .count{margin:0 0 8px;opacity:.75;font-size:14px}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 .card{display:block;border:0;border-radius:22px;overflow:hidden;cursor:pointer;text-align:left;padding:0;font:inherit;color:#2B1B4B;box-shadow:var(--sh)}
-.card .pic{height:88px;display:grid;place-items:center;font-size:48px;background:rgba(255,255,255,.28)}
+.card .pic{height:104px;display:grid;place-items:center;font-size:48px;background:rgba(255,255,255,.28)}
+.pic img{width:100%;height:100%;object-fit:cover}
 .card .b{padding:10px 12px 12px}
 .card small{display:block;font-size:13px;opacity:.8;font-weight:700}
 .card h3{margin:0;font-size:18px;line-height:1.15}
 .price{display:inline-block;margin-top:6px;background:#2B1B4B;color:#fff;border-radius:999px;padding:0 12px;font-weight:800;font-size:15px}
 .panel{background:rgba(255,196,31,.86);color:#2B1B4B;border-radius:24px;padding:18px;box-shadow:var(--sh);margin-bottom:14px}
 .panel.b2{background:rgba(91,156,255,.86)}
-.panel h2{margin:0 0 4px;font-size:22px}.panel h3{margin:14px 0 0;font-size:18px}
+.panel h2{margin:0 0 4px;font-size:22px}
 label{display:block;font-weight:700;margin:10px 0 4px;font-size:15px}
 input,select{width:100%;font:inherit;border:0;border-radius:14px;padding:8px 12px;background:rgba(255,255,255,.92);color:#2B1B4B}
 .btn{display:block;width:100%;border:0;border-radius:999px;font:inherit;font-weight:800;font-size:17px;padding:10px 16px;margin-top:14px;cursor:pointer;color:#fff;background:#FF3D8B;text-align:center;text-decoration:none}
@@ -44,30 +45,36 @@ input,select{width:100%;font:inherit;border:0;border-radius:14px;padding:8px 12p
 .badge{display:inline-block;background:#18B45B;color:#fff;border-radius:999px;padding:0 12px;font-weight:800;font-size:14px}
 .sheet{position:fixed;inset:0;background:rgba(20,10,40,.55);display:none;align-items:flex-end;justify-content:center;z-index:5}
 .sheet.show{display:flex}
-.sheet .in{width:100%;max-width:640px;border-radius:28px 28px 0 0;padding:20px;color:#2B1B4B}
+.sheet .in{width:100%;max-width:640px;max-height:92vh;overflow-y:auto;border-radius:28px 28px 0 0;padding:20px;color:#2B1B4B}
 .big{font-size:56px;text-align:center}
+.photo{width:100%;max-height:230px;object-fit:cover;border-radius:18px;margin-bottom:8px}
+.av{width:44px;height:44px;border-radius:50%;object-fit:cover;vertical-align:middle;margin-right:8px}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:20px;background:var(--ink);color:var(--bg);padding:8px 18px;border-radius:999px;font-weight:700;display:none;z-index:9;max-width:90%}
-.mine{display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,.55);border-radius:16px;padding:6px 12px;margin-top:8px}
+.mine,.adm{background:rgba(255,255,255,.55);border-radius:16px;padding:6px 12px;margin-top:8px}
+.mine{display:flex;justify-content:space-between;align-items:center}
 .mine button{border:0;background:none;font-size:20px;cursor:pointer}
 code{display:block;word-break:break-all;background:rgba(255,255,255,.7);border-radius:12px;padding:6px 10px;font-size:13px}
+.foot{text-align:center;font-size:13px;opacity:.8;margin-top:10px}.foot a{color:inherit}
 </style></head><body><main>
 <header><div class="logo">Miam<span>Place</span></div>
 <div class="seg"><button id="tF" class="on" onclick="go('feed')">Plats</button><button id="tS" onclick="go('space')">Mon espace</button></div></header>
-<div id="app"></div></main>
+<div id="app"></div>
+<p class="foot"><a href="#" onclick="openTerms();return false">Conditions d'utilisation</a></p></main>
 <div class="sheet" id="sheet" onclick="if(event.target===this)closeSheet()"><div class="in" id="sheetIn"></div></div>
 <div class="toast" id="toast"></div>
 <script>
 var SB_URL='https://mhevyavftbodhllshqhe.supabase.co';
 var SB_KEY='sb_publishable_schUO919KQtdUSORoNiIYA_t0CgGWPW';
-var PAY_NUM='6XX XX XX XX'; // TON numéro MoMo / Orange Money
+var PAY_NUM='678838069';'655324913' // TON numéro MoMo / Orange Money
 var sb=supabase.createClient(SB_URL,SB_KEY);
 var SC=['#FFC41F','#FF6FA5','#3FD17F','#5B9CFF','#FF8A4C','#B085FF'];
 var CATS=['Tout','Plats','Grillades','Snacks','Boissons','Pâtisserie'];
 var EMO=['🍲','🐟','🍗','🍔','🍕','🍩','🥤','🍰','🍢','🥗'];
 var me=null,prof=null,sub=null,posts=[],mine=[],view='feed',cat='Tout',q='',mode='login';
+var isAdmin=false,sellers=[],subs={},reps=[];
 var A={email:'',pw:'',role:'client',shop:'',wa:''};
-var P={shop:'',slogan:'',color:SC[0],wa:''};
-var D={dish:'',price:'',zone:'',cat:'Plats',e:'🍲'};
+var P={shop:'',slogan:'',color:SC[0],wa:'',avatar:''};
+var D={dish:'',price:'',zone:'',cat:'Plats',e:'🍲',img:''};
 function $(i){return document.getElementById(i)}
 function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
 function fmt(n){return Number(n).toLocaleString('fr-FR')+' F'}
@@ -75,18 +82,25 @@ function toast(t){var x=$('toast');x.textContent=t;x.style.display='block';setTi
 function wa(tel,msg){var d=String(tel||'').replace(/\D/g,'');if(d.length===9)d='237'+d;return 'https://wa.me/'+d+'?text='+encodeURIComponent(msg)}
 function isActive(){return sub&&new Date(sub.paid_until)>new Date()}
 async function loadMe(){
+  var ad=await sb.from('admins').select('id').eq('id',me.id).maybeSingle();isAdmin=!!ad.data;
   var r=await sb.from('profiles').select('*').eq('id',me.id).maybeSingle();
   if(!r.data){var m=me.user_metadata||{};
     var i=await sb.from('profiles').insert({id:me.id,role:m.role||'client',shop_name:m.shop||null,whatsapp:m.wa||null}).select().single();
     if(i.error){toast(i.error.message);return}prof=i.data}else prof=r.data;
-  P={shop:prof.shop_name||'',slogan:prof.slogan||'',color:prof.color||SC[0],wa:prof.whatsapp||''};
+  P={shop:prof.shop_name||'',slogan:prof.slogan||'',color:prof.color||SC[0],wa:prof.whatsapp||'',avatar:prof.avatar_url||''};
   if(prof.role==='vendeur'){
     var s=await sb.from('subscriptions').select('paid_until').eq('seller_id',me.id).maybeSingle();sub=s.data;
     var m2=await sb.from('posts').select('*').eq('seller_id',me.id).order('created_at',{ascending:false});mine=m2.data||[];
   }
+  if(isAdmin)await loadAdmin();
+}
+async function loadAdmin(){
+  var a=await sb.from('profiles').select('id,shop_name,whatsapp').eq('role','vendeur');sellers=a.data||[];
+  var b=await sb.from('subscriptions').select('seller_id,paid_until');subs={};(b.data||[]).forEach(function(x){subs[x.seller_id]=x.paid_until});
+  var c=await sb.from('reports').select('id,reason,post_id,posts(dish)').order('created_at',{ascending:false}).limit(30);reps=c.data||[];
 }
 async function loadPosts(){
-  var r=await sb.from('posts').select('*,profiles(shop_name,slogan,color,whatsapp)').order('created_at',{ascending:false}).limit(100);
+  var r=await sb.from('posts').select('*,profiles(shop_name,slogan,color,whatsapp,avatar_url)').order('created_at',{ascending:false}).limit(100);
   if(r.error)toast(r.error.message);posts=r.data||[];
 }
 async function go(v){
@@ -105,15 +119,26 @@ function grid(){
   var l=posts.filter(function(p){var s=(p.profiles&&p.profiles.shop_name)||'';return (cat==='Tout'||p.category===cat)&&(!k||(p.dish+' '+s+' '+p.zone).toLowerCase().indexOf(k)>-1)});
   $('cnt').textContent=l.length+' annonce'+(l.length>1?'s':'');
   $('grid').innerHTML=l.length?l.map(function(p){var pr=p.profiles||{};
-    return '<button class="card" style="background:'+(pr.color||SC[0])+'D9" onclick="openPost('+p.id+')"><div class="pic">'+esc(p.emoji)+'</div><div class="b"><small>'+esc(pr.shop_name||'Boutique')+'</small><h3>'+esc(p.dish)+'</h3><small>'+esc(p.zone)+'</small><span class="price">'+fmt(p.price)+'</span></div></button>'}).join(''):'<div class="panel" style="grid-column:1/-1"><h2>Aucune annonce pour le moment</h2></div>';
+    return '<button class="card" style="background:'+(pr.color||SC[0])+'D9" onclick="openPost('+p.id+')"><div class="pic">'+(p.image_url?'<img loading="lazy" alt="" src="'+esc(p.image_url)+'">':esc(p.emoji))+'</div><div class="b"><small>'+esc(pr.shop_name||'Boutique')+'</small><h3>'+esc(p.dish)+'</h3><small>'+esc(p.zone)+'</small><span class="price">'+fmt(p.price)+'</span></div></button>'}).join(''):'<div class="panel" style="grid-column:1/-1"><h2>Aucune annonce pour le moment</h2></div>';
 }
 function openPost(id){
   var p=posts.filter(function(x){return x.id===id})[0],pr=p.profiles||{};
   $('sheetIn').style.background=(pr.color||SC[0])+'EB';
-  $('sheetIn').innerHTML='<div class="big">'+esc(p.emoji)+'</div><h2 style="margin:0">'+esc(p.dish)+'</h2><p style="margin:2px 0">'+esc(pr.shop_name||'')+' · '+esc(p.zone)+'</p>'+(pr.slogan?'<p style="margin:2px 0;opacity:.85">'+esc(pr.slogan)+'</p>':'')+'<span class="price">'+fmt(p.price)+'</span><a class="btn g" target="_blank" rel="noopener" href="'+wa(pr.whatsapp,'Bonjour, je suis intéressé(e) par : '+p.dish+' ('+fmt(p.price)+') vu sur Miam Place.')+'">Discuter sur WhatsApp</a><button class="btn y" onclick="closeSheet()">Fermer</button>';
+  $('sheetIn').innerHTML=(p.image_url?'<img class="photo" alt="" src="'+esc(p.image_url)+'">':'<div class="big">'+esc(p.emoji)+'</div>')+'<h2 style="margin:0">'+esc(p.dish)+'</h2><p style="margin:4px 0">'+(pr.avatar_url?'<img class="av" alt="" src="'+esc(pr.avatar_url)+'">':'')+esc(pr.shop_name||'')+' · '+esc(p.zone)+'</p>'+(pr.slogan?'<p style="margin:2px 0;opacity:.85">'+esc(pr.slogan)+'</p>':'')+'<span class="price">'+fmt(p.price)+'</span><a class="btn g" target="_blank" rel="noopener" href="'+wa(pr.whatsapp,'Bonjour, je suis intéressé(e) par : '+p.dish+' ('+fmt(p.price)+') vu sur Miam Place.')+'">Discuter sur WhatsApp</a><button class="btn y" onclick="closeSheet()">Fermer</button><button class="btn y" style="font-size:14px;padding:6px" onclick="reportPost('+p.id+')">Signaler cette annonce</button>';
   $('sheet').className='sheet show';
 }
 function closeSheet(){$('sheet').className='sheet'}
+async function reportPost(id){
+  if(!me){toast('Connecte-toi pour signaler une annonce');return}
+  var why=prompt('Pourquoi signales-tu cette annonce ?');if(!why)return;
+  var r=await sb.from('reports').insert({post_id:id,reporter:me.id,reason:why.slice(0,300)});
+  toast(r.error?r.error.message:'Merci, signalement envoyé');
+}
+function openTerms(){
+  $('sheetIn').style.background='#FFC41FEB';
+  $('sheetIn').innerHTML='<h2 style="margin:0 0 8px">Conditions d\'utilisation</h2><p>Miam Place est un espace d\'annonces : nous mettons en relation vendeurs et clients, nous ne vendons pas les plats et ne participons pas aux paiements entre eux.</p><p>Chaque vendeur est responsable de ses annonces, de ses prix, de l\'hygiène et de la livraison. Les annonces trompeuses ou interdites peuvent être supprimées.</p><p>L\'abonnement vendeur est de 100 F par jour, non remboursable. Il rend les annonces visibles pendant la durée payée.</p><p>Tu peux signaler toute annonce avec le bouton « Signaler ».</p><button class="btn y" onclick="closeSheet()">Fermer</button>';
+  $('sheet').className='sheet show';
+}
 function renderAuth(){
   var su=mode==='signup',h='<div class="panel"><h2>'+(su?'Créer un compte':'Connexion')+'</h2><label>E-mail</label><input type="email" value="'+esc(A.email)+'" oninput="A.email=this.value"><label>Mot de passe (6 caractères minimum)</label><input type="password" value="'+esc(A.pw)+'" oninput="A.pw=this.value">';
   if(su){h+='<label>Je suis</label><select onchange="A.role=this.value;renderAuth()"><option value="client"'+(A.role==='client'?' selected':'')+'>Client (gratuit)</option><option value="vendeur"'+(A.role==='vendeur'?' selected':'')+'>Vendeur (100 F/jour)</option></select>';
@@ -124,22 +149,51 @@ function renderAuth(){
 async function submitAuth(){
   var r,e=A.email.trim();
   if(mode==='login')r=await sb.auth.signInWithPassword({email:e,password:A.pw});
-  else r=await sb.auth.signUp({email:e,password:A.pw,options:{data:{role:A.role,shop:A.shop,wa:A.wa}}});
+  else r=await sb.auth.signUp({email:e,password:A.pw,options:{emailRedirectTo:location.origin+location.pathname,data:{role:A.role,shop:A.shop,wa:A.wa}}});
   if(r.error){toast(r.error.message);return}
   if(!r.data.session){toast('Compte créé. Confirme ton e-mail, puis connecte-toi.');mode='login';renderAuth();return}
   me=r.data.session.user;A.pw='';await loadMe();renderSpace();
 }
-async function logout(){await sb.auth.signOut();me=prof=sub=null;mine=[];go('feed')}
+async function logout(){await sb.auth.signOut();me=prof=sub=null;mine=[];isAdmin=false;go('feed')}
 function copyId(){navigator.clipboard.writeText(me.id).then(function(){toast('Code copié')})}
+async function upPhoto(file){
+  try{
+    var img=await createImageBitmap(file),s=Math.min(1,700/Math.max(img.width,img.height)),c=document.createElement('canvas');
+    c.width=Math.round(img.width*s);c.height=Math.round(img.height*s);
+    c.getContext('2d').drawImage(img,0,0,c.width,c.height);
+    var blob=await new Promise(function(r){c.toBlob(r,'image/jpeg',.8)});
+    var path=me.id+'/'+Date.now()+'.jpg';
+    var r=await sb.storage.from('photos').upload(path,blob,{contentType:'image/jpeg'});
+    if(r.error){toast(r.error.message);return null}
+    return sb.storage.from('photos').getPublicUrl(path).data.publicUrl;
+  }catch(e){toast('Photo non lisible');return null}
+}
+async function setLogo(inp){
+  var f=inp.files[0];if(!f)return;toast('Envoi du logo…');
+  var u=await upPhoto(f);if(!u)return;
+  var r=await sb.from('profiles').update({avatar_url:u}).eq('id',me.id);
+  if(r.error){toast(r.error.message);return}
+  P.avatar=u;toast('Logo enregistré');renderSpace();
+}
+async function setDishImg(inp){
+  var f=inp.files[0];if(!f)return;toast('Envoi de la photo…');
+  var u=await upPhoto(f);if(!u)return;D.img=u;toast('Photo ajoutée');renderSpace();
+}
 function renderSpace(){
   if(!prof){$('app').innerHTML='<div class="panel"><h2>Chargement…</h2></div>';return}
-  var h='<div class="panel"><h2>Mon compte</h2><p style="margin:0">'+esc(me.email)+' <span class="badge">'+prof.role+'</span></p><button class="btn y" onclick="logout()">Déconnexion</button></div>';
+  var h='<div class="panel"><h2>Mon compte</h2><p style="margin:0">'+esc(me.email)+' <span class="badge">'+prof.role+'</span>'+(isAdmin?' <span class="badge" style="background:#FF3D8B">admin</span>':'')+'</p><button class="btn y" onclick="logout()">Déconnexion</button></div>';
+  if(isAdmin){
+    h+='<div class="panel b2"><h2>Admin · Vendeurs</h2>'+(sellers.length?sellers.map(function(s){var u=subs[s.id],on=u&&new Date(u)>new Date();
+      return '<div class="adm"><b>'+esc(s.shop_name||'Sans nom')+'</b> · '+esc(s.whatsapp||'')+'<br><small>'+(on?'Actif jusqu\'au '+new Date(u).toLocaleString('fr-FR'):'Inactif')+'</small><div class="row"><button class="btn y" onclick="activate(\''+s.id+'\',1)">+1 jour</button><button class="btn g" onclick="activate(\''+s.id+'\',7)">+7 jours</button></div></div>'}).join(''):'<p>Aucun vendeur pour le moment.</p>')+'</div>';
+    h+='<div class="panel b2"><h2>Admin · Signalements</h2>'+(reps.length?reps.map(function(x){
+      return '<div class="adm"><b>'+esc((x.posts&&x.posts.dish)||'Annonce supprimée')+'</b><br><small>'+esc(x.reason)+'</small>'+(x.posts?'<button class="btn y" onclick="delPostAdmin('+x.post_id+')">Supprimer l\'annonce</button>':'')+'</div>'}).join(''):'<p>Aucun signalement.</p>')+'</div>';
+  }
   if(prof.role==='vendeur'){
     if(isActive())h+='<div class="panel b2"><h2>Abonnement actif</h2><p style="margin:0">Jusqu\'au '+new Date(sub.paid_until).toLocaleString('fr-FR')+'</p></div>';
     else h+='<div class="panel b2"><h2>Active ton compte vendeur</h2><p>Envoie <b>100 F</b> par MTN MoMo ou Orange Money au <b>'+esc(PAY_NUM)+'</b>, puis envoie-nous ce code :</p><code>'+me.id+'</code><button class="btn y" onclick="copyId()">Copier mon code</button><p style="margin:10px 0 0;font-size:14px">Ton compte est activé après vérification du paiement.</p></div>';
-    h+='<div class="panel"><h2>Ma boutique</h2><label>Nom</label><input value="'+esc(P.shop)+'" oninput="P.shop=this.value"><label>Slogan</label><input maxlength="50" value="'+esc(P.slogan)+'" oninput="P.slogan=this.value"><label>WhatsApp</label><input type="tel" value="'+esc(P.wa)+'" oninput="P.wa=this.value"><label>Ma couleur</label><div class="sw">'+SC.map(function(c){return '<button class="'+(c===P.color?'on':'')+'" style="background:'+c+'" aria-label="couleur" onclick="P.color=\''+c+'\';renderSpace()"></button>'}).join('')+'</div><button class="btn g" onclick="saveProfile()">Enregistrer ma boutique</button></div>';
+    h+='<div class="panel"><h2>Ma boutique</h2>'+(P.avatar?'<img class="av" alt="" src="'+esc(P.avatar)+'">':'')+'<label>Logo ou photo de la boutique</label><input type="file" accept="image/*" onchange="setLogo(this)"><label>Nom</label><input value="'+esc(P.shop)+'" oninput="P.shop=this.value"><label>Slogan</label><input maxlength="50" value="'+esc(P.slogan)+'" oninput="P.slogan=this.value"><label>WhatsApp</label><input type="tel" value="'+esc(P.wa)+'" oninput="P.wa=this.value"><label>Ma couleur</label><div class="sw">'+SC.map(function(c){return '<button class="'+(c===P.color?'on':'')+'" style="background:'+c+'" aria-label="couleur" onclick="P.color=\''+c+'\';renderSpace()"></button>'}).join('')+'</div><button class="btn g" onclick="saveProfile()">Enregistrer ma boutique</button></div>';
     if(isActive()){
-      h+='<div class="panel"><h2>Nouvelle annonce</h2><label>Plat</label><input value="'+esc(D.dish)+'" oninput="D.dish=this.value"><div class="row"><div><label>Prix (F)</label><input type="number" inputmode="numeric" value="'+esc(D.price)+'" oninput="D.price=this.value"></div><div><label>Quartier</label><input value="'+esc(D.zone)+'" oninput="D.zone=this.value"></div></div><label>Catégorie</label><select onchange="D.cat=this.value">'+CATS.slice(1).map(function(c){return '<option'+(c===D.cat?' selected':'')+'>'+c+'</option>'}).join('')+'</select><label>Image</label><div class="emojis">'+EMO.map(function(e){return '<button class="'+(e===D.e?'on':'')+'" onclick="D.e=\''+e+'\';renderSpace()">'+e+'</button>'}).join('')+'</div><button class="btn g" onclick="publish()">Publier</button></div>';
+      h+='<div class="panel"><h2>Nouvelle annonce</h2><label>Plat</label><input value="'+esc(D.dish)+'" oninput="D.dish=this.value"><div class="row"><div><label>Prix (F)</label><input type="number" inputmode="numeric" value="'+esc(D.price)+'" oninput="D.price=this.value"></div><div><label>Quartier</label><input value="'+esc(D.zone)+'" oninput="D.zone=this.value"></div></div><label>Catégorie</label><select onchange="D.cat=this.value">'+CATS.slice(1).map(function(c){return '<option'+(c===D.cat?' selected':'')+'>'+c+'</option>'}).join('')+'</select><label>Photo du plat (facultatif)</label>'+(D.img?'<img class="photo" alt="" src="'+esc(D.img)+'">':'')+'<input type="file" accept="image/*" onchange="setDishImg(this)"><label>Ou une image emoji</label><div class="emojis">'+EMO.map(function(e){return '<button class="'+(e===D.e?'on':'')+'" onclick="D.e=\''+e+'\';renderSpace()">'+e+'</button>'}).join('')+'</div><button class="btn g" onclick="publish()">Publier</button></div>';
       if(mine.length)h+='<div class="panel b2"><h2>Mes annonces</h2>'+mine.map(function(p){return '<div class="mine"><span>'+esc(p.emoji)+' '+esc(p.dish)+' · '+fmt(p.price)+'</span><button aria-label="Supprimer" onclick="del('+p.id+')">🗑️</button></div>'}).join('')+'</div>';
     }
   }
@@ -152,14 +206,6 @@ async function saveProfile(){
 async function publish(){
   var price=parseInt(D.price,10);
   if(!D.dish.trim()||!price||!D.zone.trim()){toast('Remplis plat, prix et quartier');return}
-  var r=await sb.from('posts').insert({seller_id:me.id,dish:D.dish.trim(),price:price,category:D.cat,zone:D.zone.trim(),emoji:D.e});
+  var r=await sb.from('posts').insert({seller_id:me.id,dish:D.dish.trim(),price:price,category:D.cat,zone:D.zone.trim(),emoji:D.e,image_url:D.img||null});
   if(r.error){toast(r.error.message);return}
-  D.dish='';D.price='';toast('Annonce publiée');await loadMe();renderSpace();
-}
-async function del(id){var r=await sb.from('posts').delete().eq('id',id);if(r.error)toast(r.error.message);await loadMe();renderSpace()}
-(async function(){
-  var s=await sb.auth.getSession();
-  if(s.data.session){me=s.data.session.user;await loadMe()}
-  await loadPosts();renderFeed();
-})();
-</script></body></html>
+  D.dish='';D.price='';D.img='';toast('Annonce publiée')
