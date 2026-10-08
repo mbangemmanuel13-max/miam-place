@@ -59,7 +59,7 @@ code{display:block;word-break:break-all;background:rgba(255,255,255,.7);border-r
 <script>
 var SB_URL='https://mhevyavftbodhllshqhe.supabase.co';
 var SB_KEY='sb_publishable_schUO919KQtdUSORoNiIYA_t0CgGWPW';
-var PAY_NUM='678838069'; // TON numéro MoMo / Orange Money
+var PAY_NUM='6XX XX XX XX'; // TON numéro MoMo / Orange Money
 var sb=supabase.createClient(SB_URL,SB_KEY);
 var SC=['#FFC41F','#FF6FA5','#3FD17F','#5B9CFF','#FF8A4C','#B085FF'];
 var CATS=['Tout','Plats','Grillades','Snacks','Boissons','Pâtisserie'];
@@ -124,7 +124,7 @@ function renderAuth(){
 async function submitAuth(){
   var r,e=A.email.trim();
   if(mode==='login')r=await sb.auth.signInWithPassword({email:e,password:A.pw});
-  else r=await sb.auth.signUp({email:e,password:A.pw,options:{data:{role:A.role,shop:A.shop,wa:A.wa}}});
+  else r=await sb.auth.signUp({email:e,password:A.pw,options:{emailRedirectTo:location.origin+location.pathname,data:{role:A.role,shop:A.shop,wa:A.wa}}});
   if(r.error){toast(r.error.message);return}
   if(!r.data.session){toast('Compte créé. Confirme ton e-mail, puis connecte-toi.');mode='login';renderAuth();return}
   me=r.data.session.user;A.pw='';await loadMe();renderSpace();
