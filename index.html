@@ -386,5 +386,32 @@ deleteAccount=async function(){
   var r=await sb.rpc('delete_my_account');
   if(r.error){toast(r.error.message);return}
   await sb.auth.signOut();me=prof=sub=null;mine=[];isAdmin=false;toast('Compte supprimé');go('feed');
-};  
+}; 
+var trialFlag=false;
+var _loadMe2=loadMe;
+loadMe=async function(){
+  await _loadMe2();
+  trialFlag=false;
+  if(prof&&prof.role==='vendeur'){
+    var t=await sb.from('subscriptions').select('trial').eq('seller_id',me.id).maybeSingle();
+    trialFlag=!!(t.data&&t.data.trial);
+  }
+};
+var _rs6=renderSpace;
+renderSpace=function(){
+  _rs6();
+  if(!prof||prof.role!=='vendeur'||!trialFlag||!isActive())return;
+  document.querySelectorAll('#app .panel h2').forEach(function(h){
+    if(h.textContent!=='Abonnement actif')return;
+    var d=Math.max(1,Math.ceil((new Date(sub.paid_until)-new Date())/86400000));
+    h.parentNode.innerHTML='<h2>Essai gratuit en cours 🎁</h2><p style="margin:0">Il te reste <b>'+d+' jour'+(d>1?'s':'')+'</b> (jusqu\'au '+new Date(sub.paid_until).toLocaleString('fr-FR')+'). Ensuite, l\'abonnement est de <b>100 XAF par jour</b>.</p>';
+  });
+};
+var _ra=renderAuth;
+renderAuth=function(){
+  _ra();
+  document.querySelectorAll('#app p').forEach(function(p){
+    if(p.textContent.indexOf('100 XAF par jour')>-1)p.textContent='7 jours gratuits pour essayer, puis 100 XAF par jour.';
+  });
+};
 </script></body></html>
