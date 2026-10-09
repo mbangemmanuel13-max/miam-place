@@ -359,4 +359,32 @@ renderSpace=function(){
     h.parentNode.innerHTML='<h2>Active ton compte vendeur</h2><p>L\'abonnement est de <b>100 XAF par jour</b>. Écris à l\'un de ces numéros sur WhatsApp pour donner le montant et le nom de ta boutique <b>avant de payer</b> :</p><p style="margin:0"><b>'+esc(PAY_NUM)+'</b></p>'+btns+'<p style="margin:10px 0 0;font-size:14px">Ton compte est activé après vérification du paiement.</p>';
   });
 };
+async function adminDelete(id){
+  var s=sellers.filter(function(x){return x.id===id})[0],nm=(s&&s.shop_name)||'ce vendeur';
+  if(!confirm('Supprimer définitivement le compte de « '+nm+' » ? Sa boutique, ses annonces et ses photos seront effacées.'))return;
+  toast('Suppression en cours…');
+  var r=await sb.rpc('admin_delete_user',{uid:id});
+  if(r.error){toast(r.error.message);return}
+  try{var l=await sb.storage.from('photos').list(id);if(l.data&&l.data.length)await sb.storage.from('photos').remove(l.data.map(function(x){return id+'/'+x.name}))}catch(e){}
+  toast('Compte supprimé');await loadAdmin();renderSpace();
+}
+var _rs5=renderSpace;
+renderSpace=function(){
+  _rs5();
+  document.querySelectorAll('#app button').forEach(function(b){
+    var m=/activate\('([^']+)',-7\)/.exec(b.getAttribute('onclick')||'');
+    if(m)b.parentNode.insertAdjacentHTML('afterend','<button class="btn" style="background:#B3261E" onclick="adminDelete(\''+m[1]+'\')">Supprimer ce compte</button>');
+  });
+};
+deleteAccount=async function(){
+  if(isAdmin&&!confirm("Ce compte est administrateur : tu perdras l'accès admin. Continuer ?"))return;
+  var t=prompt('Action définitive : ton compte, ta boutique, tes photos et tes annonces seront supprimés. Écris SUPPRIMER pour confirmer.');
+  if(t===null)return;
+  if(t.trim().toUpperCase()!=='SUPPRIMER'){toast('Il fallait écrire SUPPRIMER. Suppression annulée.');return}
+  toast('Suppression en cours…');
+  try{var l=await sb.storage.from('photos').list(me.id);if(l.data&&l.data.length)await sb.storage.from('photos').remove(l.data.map(function(x){return me.id+'/'+x.name}))}catch(e){}
+  var r=await sb.rpc('delete_my_account');
+  if(r.error){toast(r.error.message);return}
+  await sb.auth.signOut();me=prof=sub=null;mine=[];isAdmin=false;toast('Compte supprimé');go('feed');
+};  
 </script></body></html>
