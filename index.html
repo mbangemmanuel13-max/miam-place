@@ -162,4 +162,32 @@ async function del(id){var r=await sb.from('posts').delete().eq('id',id);if(r.er
   if(s.data.session){me=s.data.session.user;await loadMe()}
   await loadPosts();renderFeed();
 })();
+  var isAdmin=false,sellers=[],subs={};
+async function loadAdmin(){
+  var a=await sb.from('profiles').select('id,shop_name,whatsapp').eq('role','vendeur');sellers=a.data||[];
+  var b=await sb.from('subscriptions').select('seller_id,paid_until');subs={};
+  (b.data||[]).forEach(function(x){subs[x.seller_id]=x.paid_until});
+}
+var _loadMe=loadMe;
+loadMe=async function(){
+  await _loadMe();
+  var ad=await sb.from('admins').select('id').eq('id',me.id).maybeSingle();
+  isAdmin=!!ad.data;
+  if(isAdmin)await loadAdmin();
+};
+async function activate(id,n){
+  var r=await sb.rpc('activate_seller',{sid:id,nd:n});
+  if(r.error){toast(r.error.message);return}
+  toast('Vendeur activé');await loadAdmin();renderSpace();
+}
+var _renderSpace=renderSpace;
+renderSpace=function(){
+  _renderSpace();
+  if(!isAdmin||!prof)return;
+  var h='<div class="panel b2"><h2>Admin · Vendeurs</h2>'+(sellers.length?sellers.map(function(s){
+    var u=subs[s.id],on=u&&new Date(u)>new Date();
+    return '<div style="background:rgba(255,255,255,.55);border-radius:16px;padding:8px 12px;margin-top:8px"><b>'+esc(s.shop_name||'Sans nom')+'</b> · '+esc(s.whatsapp||'')+'<br><small>'+(on?'Actif jusqu\'au '+new Date(u).toLocaleString('fr-FR'):'Inactif')+'</small><div class="row"><button class="btn y" onclick="activate(\''+s.id+'\',1)">+1 jour</button><button class="btn g" onclick="activate(\''+s.id+'\',7)">+7 jours</button></div></div>'
+  }).join(''):'<p>Aucun vendeur pour le moment.</p>')+'</div>';
+  $('app').insertAdjacentHTML('afterbegin',h);
+};
 </script></body></html>
