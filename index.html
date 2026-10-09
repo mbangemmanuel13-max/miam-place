@@ -251,5 +251,112 @@ openPost=function(id){
   var pr=p.profiles||{},si=$('sheetIn');
   if(p.image_url){var b=si.querySelector('.big');if(b)b.outerHTML='<img alt="" style="width:100%;max-height:230px;object-fit:cover;border-radius:18px;margin-bottom:8px" src="'+esc(p.image_url)+'">';}
   if(pr.avatar_url){var h2=si.querySelector('h2');if(h2)h2.insertAdjacentHTML('afterend','<img alt="" style="width:44px;height:44px;border-radius:50%;object-fit:cover;margin:4px 0" src="'+esc(pr.avatar_url)+'">');}
-};  
+};
+fmt=function(n){return Number(n).toLocaleString('fr-FR')+' XAF'};
+var showPw=false;
+A.role='vendeur';
+function togglePw(){showPw=!showPw;var i=$('pw');i.type=showPw?'text':'password';i.nextElementSibling.textContent=showPw?'🙈':'👁️'}
+renderAuth=function(){
+  var su=mode==='signup';A.role='vendeur';
+  var h='<div class="panel"><h2>'+(su?'Créer mon compte vendeur':'Connexion vendeur')+'</h2>'+(su?'<p style="margin:0">100 XAF par jour pour publier tes annonces.</p>':'')+
+  '<label>E-mail</label><input type="email" value="'+esc(A.email)+'" oninput="A.email=this.value">'+
+  '<label>Mot de passe (6 caractères minimum)</label><div style="position:relative"><input id="pw" type="'+(showPw?'text':'password')+'" value="'+esc(A.pw)+'" oninput="A.pw=this.value" style="padding-right:52px"><button type="button" aria-label="Afficher ou masquer le mot de passe" onclick="togglePw()" style="position:absolute;right:6px;top:50%;transform:translateY(-50%);border:0;background:none;font-size:22px;cursor:pointer">'+(showPw?'🙈':'👁️')+'</button></div>';
+  if(su)h+='<label>Nom de ma boutique</label><input value="'+esc(A.shop)+'" oninput="A.shop=this.value"><label>Mon numéro WhatsApp</label><input type="tel" value="'+esc(A.wa)+'" oninput="A.wa=this.value">';
+  h+='<button class="btn g" onclick="submitAuth()">'+(su?'Créer mon compte':'Me connecter')+'</button><button class="btn y" onclick="mode=\''+(su?'login':'signup')+'\';renderAuth()">'+(su?'J\'ai déjà un compte':'Devenir vendeur')+'</button></div>';
+  $('app').innerHTML=h;
+};
+var _submitAuth=submitAuth;
+submitAuth=function(){
+  if(mode==='signup'&&(!A.shop.trim()||String(A.wa).replace(/\D/g,'').length<9)){toast('Indique le nom de ta boutique et ton numéro WhatsApp');return}
+  return _submitAuth();
+};
+activate=async function(id,n){
+  var r=await sb.rpc('activate_seller',{sid:id,nd:n});
+  if(r.error){toast(r.error.message);return}
+  toast(n>0?'Vendeur activé':'Durée réduite');await loadAdmin();renderSpace();
+};
+var cur=null,E={};
+function mineById(id){return mine.filter(function(x){return x.id===id})[0]}
+function openMine(id){
+  var p=mineById(id);if(!p)return;cur=id;
+  var si=$('sheetIn');si.style.background='#FFC41FEB';
+  si.innerHTML=(p.image_url?'<img alt="" style="width:100%;max-height:230px;object-fit:cover;border-radius:18px;margin-bottom:8px" src="'+esc(p.image_url)+'">':'<div class="big">'+esc(p.emoji)+'</div>')+'<h2 style="margin:0">'+esc(p.dish)+'</h2><p style="margin:4px 0">'+esc(p.zone)+' · '+esc(p.category)+'</p><span class="price">'+fmt(p.price)+'</span><button class="btn g" onclick="editMine()">Modifier l\'annonce</button><button class="btn" style="background:#B3261E" onclick="delMine()">Supprimer l\'annonce</button><button class="btn y" onclick="closeSheet()">Fermer</button>';
+  $('sheet').className='sheet show';
+}
+function editMine(){var p=mineById(cur);E={dish:p.dish,price:String(p.price),zone:p.zone,cat:p.category,img:p.image_url||''};drawEdit()}
+function drawEdit(){
+  $('sheetIn').innerHTML='<h2 style="margin:0 0 4px">Modifier l\'annonce</h2><label>Plat</label><input value="'+esc(E.dish)+'" oninput="E.dish=this.value"><div class="row"><div><label>Prix (XAF)</label><input type="number" inputmode="numeric" value="'+esc(E.price)+'" oninput="E.price=this.value"></div><div><label>Quartier</label><input value="'+esc(E.zone)+'" oninput="E.zone=this.value"></div></div><label>Catégorie</label><select onchange="E.cat=this.value">'+CATS.slice(1).map(function(c){return '<option'+(c===E.cat?' selected':'')+'>'+c+'</option>'}).join('')+'</select>'+(E.img?'<img alt="" style="width:100%;max-height:180px;object-fit:cover;border-radius:16px;margin-top:8px" src="'+esc(E.img)+'">':'')+'<label>Changer la photo (galerie)</label><input type="file" accept="image/*" onchange="editImg(this)"><button class="btn g" onclick="saveMine()">Enregistrer</button><button class="btn y" onclick="openMine(cur)">Annuler</button>';
+}
+async function editImg(inp){
+  var f=inp.files[0];if(!f)return;
+  if(typeof upPhoto!=='function'){toast("Colle d'abord le bloc des photos");return}
+  toast('Envoi de la photo…');var u=await upPhoto(f);if(!u)return;E.img=u;drawEdit();
+}
+async function saveMine(){
+  var price=parseInt(E.price,10);
+  if(!E.dish.trim()||!price||!E.zone.trim()){toast('Remplis plat, prix et quartier');return}
+  var r=await sb.from('posts').update({dish:E.dish.trim(),price:price,zone:E.zone.trim(),category:E.cat,image_url:E.img||null}).eq('id',cur);
+  if(r.error){toast(r.error.message);return}
+  toast('Annonce modifiée');closeSheet();await loadMe();renderSpace();
+}
+async function delMine(){
+  if(!confirm('Supprimer cette annonce ?'))return;
+  var r=await sb.from('posts').delete().eq('id',cur);
+  if(r.error){toast(r.error.message);return}
+  toast('Annonce supprimée');closeSheet();await loadMe();renderSpace();
+}
+async function deleteAccount(){
+  if(isAdmin&&!confirm("Ce compte est administrateur : tu perdras l'accès admin. Continuer ?"))return;
+  var t=prompt('Action définitive : ton compte, ta boutique, tes photos et tes annonces seront supprimés. Écris SUPPRIMER pour confirmer.');
+  if(t!=='SUPPRIMER'){if(t!==null)toast('Suppression annulée');return}
+  toast('Suppression en cours…');
+  try{var l=await sb.storage.from('photos').list(me.id);if(l.data&&l.data.length)await sb.storage.from('photos').remove(l.data.map(function(x){return me.id+'/'+x.name}))}catch(e){}
+  var r=await sb.rpc('delete_my_account');
+  if(r.error){toast(r.error.message);return}
+  await sb.auth.signOut();me=prof=sub=null;mine=[];isAdmin=false;toast('Compte supprimé');go('feed');
+}
+var _rs3=renderSpace;
+renderSpace=function(){
+  _rs3();
+  document.querySelectorAll('#app label').forEach(function(l){if(l.textContent==='Prix (F)')l.textContent='Prix (XAF)'});
+  document.querySelectorAll('#app b').forEach(function(b){if(b.textContent==='100 F')b.textContent='100 XAF'});
+  document.querySelectorAll('#app button').forEach(function(b){
+    var m=/activate\('([^']+)',1\)/.exec(b.getAttribute('onclick')||'');
+    if(m)b.parentNode.insertAdjacentHTML('afterend','<div class="row"><button class="btn y" style="color:#B3261E" onclick="activate(\''+m[1]+'\',-1)">-1 jour</button><button class="btn y" style="color:#B3261E" onclick="activate(\''+m[1]+'\',-7)">-7 jours</button></div>');
+  });
+  document.querySelectorAll('#app .mine').forEach(function(m){
+    var b=m.querySelector('button'),mm=/del\((\d+)\)/.exec((b&&b.getAttribute('onclick'))||'');if(!mm)return;
+    m.style.cursor='pointer';m.setAttribute('onclick','openMine('+mm[1]+')');
+    b.textContent='›';b.setAttribute('aria-label',"Voir l'annonce");b.setAttribute('onclick','event.stopPropagation();openMine('+mm[1]+')');
+  });
+  if(prof&&prof.role==='vendeur')$('app').insertAdjacentHTML('beforeend','<div class="panel"><h2>Supprimer mon compte</h2><p style="margin:0">Cette action efface ta boutique, tes photos et toutes tes annonces. Elle est définitive.</p><button class="btn" style="background:#B3261E" onclick="deleteAccount()">Supprimer mon compte</button></div>');
+};
+(function(){
+  var st=document.createElement('style');
+  st.textContent='.rv{opacity:0;transform:translateY(22px) scale(.98);transition:opacity .55s ease,transform .55s cubic-bezier(.2,.7,.2,1)}.rv.in{opacity:1;transform:none}.sheet.show .in{animation:up .3s ease}@keyframes up{from{transform:translateY(40px);opacity:0}}@media(prefers-reduced-motion:reduce){.rv{opacity:1;transform:none;transition:none}.sheet.show .in{animation:none}}';
+  document.head.appendChild(st);
+  var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target)}})},{threshold:.08});
+  var lastV=null;
+  function scan(){
+    var change=lastV!==view;lastV=view;var vh=window.innerHeight;
+    document.querySelectorAll('#app .panel,#app .card,#app .hero').forEach(function(el,i){
+      if(el.dataset.rv)return;el.dataset.rv=1;
+      var r=el.getBoundingClientRect();
+      if(r.top<vh&&r.bottom>0&&!change)return;
+      el.classList.add('rv');el.style.transitionDelay=Math.min(i,6)*70+'ms';io.observe(el);
+    });
+  }
+  new MutationObserver(scan).observe(document.getElementById('app'),{childList:true,subtree:true});
+  scan();
+})();
+  var _rs4=renderSpace;
+renderSpace=function(){
+  _rs4();
+  document.querySelectorAll('#app .panel h2').forEach(function(h){
+    if(h.textContent!=='Active ton compte vendeur')return;
+    var nums=(PAY_NUM.match(/\d[\d ]{7,}\d/g)||[]);
+    var btns=nums.map(function(n){return '<a class="btn g" target="_blank" rel="noopener" href="'+wa(n,'Bonjour, je suis le vendeur de la boutique « '+(P.shop||'')+' » sur Miam Place. Je voudrais activer mon compte. Voici le montant que je vais payer : ')+'">Écrire au '+esc(n.trim())+'</a>'}).join('');
+    h.parentNode.innerHTML='<h2>Active ton compte vendeur</h2><p>L\'abonnement est de <b>100 XAF par jour</b>. Écris à l\'un de ces numéros sur WhatsApp pour donner le montant et le nom de ta boutique <b>avant de payer</b> :</p><p style="margin:0"><b>'+esc(PAY_NUM)+'</b></p>'+btns+'<p style="margin:10px 0 0;font-size:14px">Ton compte est activé après vérification du paiement.</p>';
+  });
+};
 </script></body></html>
