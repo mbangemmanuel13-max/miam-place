@@ -2,6 +2,12 @@
 <html lang="fr"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Miam Place</title>
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#FF4A2E">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Miam Place">  
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
@@ -414,4 +420,22 @@ renderAuth=function(){
     if(p.textContent.indexOf('100 XAF par jour')>-1)p.textContent='7 jours gratuits pour essayer, puis 100 XAF par jour.';
   });
 };
+if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js').catch(function(){});
+var dip=null;
+function instBtnRemove(){var b=document.getElementById('instBtn');if(b)b.remove()}
+window.addEventListener('beforeinstallprompt',function(e){
+  e.preventDefault();dip=e;
+  if(document.getElementById('instBtn'))return;
+  document.body.insertAdjacentHTML('beforeend','<button id="instBtn" onclick="doInstall()" style="position:fixed;right:14px;bottom:calc(14px + env(safe-area-inset-bottom,0px));z-index:8;border:0;border-radius:999px;padding:10px 18px;font:inherit;font-weight:800;background:#18B45B;color:#fff;box-shadow:0 6px 16px rgba(43,27,75,.35);cursor:pointer">📲 Installer l\'app</button>');
+});
+async function doInstall(){if(!dip)return;dip.prompt();try{await dip.userChoice}catch(e){}dip=null;instBtnRemove()}
+window.addEventListener('appinstalled',instBtnRemove);
+(function(){
+  var ios=/iphone|ipad|ipod/i.test(navigator.userAgent);
+  var standalone=window.navigator.standalone||(window.matchMedia&&matchMedia('(display-mode: standalone)').matches);
+  var seen=false;try{seen=localStorage.getItem('iosHint')==='1'}catch(e){}
+  if(!ios||standalone||seen)return;
+  document.body.insertAdjacentHTML('beforeend','<div id="iosHint" style="position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom,0px));z-index:8;background:#FFC41F;color:#2B1B4B;border-radius:18px;padding:12px 40px 12px 14px;font-weight:700;box-shadow:0 6px 16px rgba(43,27,75,.35)">Pour installer l\'app : touche <b>Partager</b>, puis <b>Sur l\'écran d\'accueil</b>.<button aria-label="Fermer" onclick="document.getElementById(\'iosHint\').remove();try{localStorage.setItem(\'iosHint\',\'1\')}catch(e){}" style="position:absolute;right:8px;top:6px;border:0;background:none;font-size:22px;cursor:pointer">×</button></div>');
+})();  
 </script></body></html>
+
