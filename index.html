@@ -437,5 +437,32 @@ window.addEventListener('appinstalled',instBtnRemove);
   if(!ios||standalone||seen)return;
   document.body.insertAdjacentHTML('beforeend','<div id="iosHint" style="position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom,0px));z-index:8;background:#FFC41F;color:#2B1B4B;border-radius:18px;padding:12px 40px 12px 14px;font-weight:700;box-shadow:0 6px 16px rgba(43,27,75,.35)">Pour installer l\'app : touche <b>Partager</b>, puis <b>Sur l\'écran d\'accueil</b>.<button aria-label="Fermer" onclick="document.getElementById(\'iosHint\').remove();try{localStorage.setItem(\'iosHint\',\'1\')}catch(e){}" style="position:absolute;right:8px;top:6px;border:0;background:none;font-size:22px;cursor:pointer">×</button></div>');
 })();  
+function visitorId(){
+  var v=null;try{v=localStorage.getItem('vid')}catch(e){}
+  if(!v){
+    v=(window.crypto&&crypto.randomUUID)?crypto.randomUUID():'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,function(c){var r=Math.random()*16|0;return (c==='x'?r:(r&3|8)).toString(16)});
+    try{localStorage.setItem('vid',v)}catch(e){}
+  }
+  return v;
+}
+sb.rpc('register_visit',{v:visitorId()}).then(function(){},function(){});
+var visitTotal=null;
+var _loadMe3=loadMe;
+loadMe=async function(){
+  await _loadMe3();
+  try{var c=await sb.rpc('visitor_count');visitTotal=(c.data!=null)?Number(c.data):null}catch(e){visitTotal=null}
+};
+var _rs7=renderSpace;
+renderSpace=function(){
+  _rs7();
+  if(visitTotal==null)return;
+  document.querySelectorAll('#app .panel h2').forEach(function(h){
+    if(h.textContent!=='Ma boutique')return;
+    var w=document.createElement('div');
+    w.style.cssText='display:flex;align-items:center;justify-content:space-between;gap:12px';
+    h.parentNode.insertBefore(w,h);w.appendChild(h);h.style.margin='0';
+    w.insertAdjacentHTML('beforeend','<div style="display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.6);border-radius:999px;padding:6px 16px 6px 12px"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg><div style="line-height:1"><div style="font-size:36px;font-weight:800">'+visitTotal.toLocaleString('fr-FR')+'</div><div style="font-size:12px;margin-top:2px">vues</div></div></div>');
+  });
+};  
 </script></body></html>
 
