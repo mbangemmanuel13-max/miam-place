@@ -515,5 +515,120 @@ renderFeed=function(){
   var help=num?'<a class="btn g" style="max-width:360px;margin:14px auto 0" target="_blank" rel="noopener" href="'+wa(num,"Bonjour, j'ai besoin d'aide sur MiamPlace.")+'">Besoin d\'aide ? Écris-nous sur WhatsApp</a>':'';
   document.querySelector('main').insertAdjacentHTML('beforeend','<footer style="margin-top:22px;padding:20px 18px 18px;border-radius:24px;background:var(--card);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);box-shadow:var(--sh);text-align:center"><div class="logo" style="font-size:24px">Miam<span>Place</span></div><p style="margin:8px auto 0;max-width:420px;opacity:.85">Les plats des vendeurs près de chez toi, avec photo et prix. Tu choisis, puis tu écris au vendeur sur WhatsApp.</p>'+help+'<p style="margin:14px 0 0;font-size:13px;opacity:.7">© '+new Date().getFullYear()+' MiamPlace</p></footer><div style="height:70px"></div>');
 })();
+function todayStr(){var d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
+function soldOut(p){return !!p&&p.sold_out_date===todayStr()}
+async function toggleSold(id){
+  var p=mineById(id);if(!p)return;
+  var was=soldOut(p);
+  var r=await sb.from('posts').update({sold_out_date:was?null:todayStr()}).eq('id',id);
+  if(r.error){toast(r.error.message);return}
+  toast(was?'Annonce remise disponible':"Annonce marquée épuisée pour aujourd'hui");
+  closeSheet();await loadMe();renderSpace();
+}
+var _om=openMine;
+openMine=function(id){
+  _om(id);
+  var p=mineById(id);if(!p)return;
+  var out=soldOut(p),g=$('sheetIn').querySelector('.btn.g');if(!g)return;
+  g.insertAdjacentHTML('beforebegin','<button class="btn" style="background:'+(out?'#18B45B':'#FF7A00')+'" onclick="toggleSold('+id+')">'+(out?'Remettre disponible':"Marquer épuisé aujourd'hui")+'</button>');
+  if(out){var h=$('sheetIn').querySelector('h2');if(h)h.insertAdjacentHTML('afterend','<span class="badge" style="background:#B3261E">Épuisé aujourd\'hui</span>')}
+};
+var _gr3=grid;
+grid=function(){
+  _gr3();
+  document.querySelectorAll('#grid .card').forEach(function(c){
+    var m=/openPost\((\d+)\)/.exec(c.getAttribute('onclick')||'');if(!m)return;
+    var p=posts.filter(function(x){return x.id===+m[1]})[0];
+    if(soldOut(p)){
+      c.style.filter='grayscale(.7)';
+      var pic=c.querySelector('.pic');
+      if(pic){pic.style.position='relative';pic.insertAdjacentHTML('beforeend','<span style="position:absolute;top:8px;right:8px;background:#B3261E;color:#fff;font-weight:800;font-size:13px;border-radius:999px;padding:2px 12px">Épuisé</span>')}
+    }
+  });
+};
+var _op3=openPost;
+openPost=function(id){
+  _op3(id);
+  var p=posts.filter(function(x){return x.id===id})[0];
+  if(!soldOut(p))return;
+  var a=$('sheetIn').querySelector('a.btn.g');
+  if(a)a.outerHTML='<p style="margin:12px 0 0;font-weight:800;color:#B3261E">Cette annonce est épuisée pour aujourd\'hui. Reviens demain !</p>';
+};
+var shopF=new URLSearchParams(location.search).get('b');
+var _grf=grid;
+grid=function(){
+  if(!shopF)return _grf();
+  var all=posts;posts=all.filter(function(p){return p.seller_id===shopF});
+  try{_grf()}finally{posts=all}
+};
+window._recov=false;
+var _rf3=renderFeed;
+renderFeed=function(){
+  if(window._recov){showNewPw();return}
+  _rf3();
+  if(!shopF)return;
+  var m1=posts.filter(function(p){return p.seller_id===shopF})[0],pr=(m1&&m1.profiles)||{};
+  $('app').insertAdjacentHTML('afterbegin','<div class="panel" style="text-align:center">'+(pr.avatar_url?'<img alt="" style="width:64px;height:64px;border-radius:50%;object-fit:cover" src="'+esc(pr.avatar_url)+'">':'')+'<h2>'+esc(pr.shop_name||'Boutique')+'</h2>'+(pr.slogan?'<p style="margin:0">'+esc(pr.slogan)+'</p>':'')+(m1?'':'<p style="margin:6px 0 0">Aucune annonce disponible pour le moment.</p>')+'<button class="btn y" onclick="allShops()">Voir tous les plats</button></div>');
+};
+function allShops(){shopF=null;history.replaceState(null,'',location.pathname);renderFeed()}
+function shopLink(){return location.origin+location.pathname+'?b='+me.id}
+function copyLink(){navigator.clipboard.writeText(shopLink()).then(function(){toast('Lien copié')},function(){toast('Copie impossible')})}
+function pwBox(id,ph){return '<div style="position:relative"><input id="'+id+'" type="password" placeholder="'+ph+'" style="padding-right:52px"><button type="button" aria-label="Afficher ou masquer" onclick="var i=document.getElementById(\''+id+'\');var s=i.type===\'password\';i.type=s?\'text\':\'password\';this.textContent=s?\'🙈\':\'👁️\'" style="position:absolute;right:6px;top:50%;transform:translateY(-50%);border:0;background:none;font-size:22px;cursor:pointer">👁️</button></div>'}
+async function changePw(){
+  var v=($('cp')||{}).value||'';
+  if(v.length<6){toast('6 caractères minimum');return}
+  var r=await sb.auth.updateUser({password:v});
+  toast(r.error?r.error.message:'Mot de passe changé');
+  if(!r.error&&$('cp'))$('cp').value='';
+}
+var _rs8=renderSpace;
+renderSpace=function(){
+  _rs8();
+  if(!me||!prof)return;
+  document.querySelectorAll('#app .panel h2').forEach(function(h){
+    if(h.textContent==='Ma boutique'&&prof.role==='vendeur'){
+      var link=shopLink(),msg='Découvre mes plats sur MiamPlace : '+link;
+      h.closest('.panel').insertAdjacentHTML('beforebegin','<div class="panel b2"><h2>Partager ma boutique</h2><p style="margin:0">Envoie ce lien à tes clients : il montre seulement tes annonces.</p><code style="margin-top:8px">'+esc(link)+'</code><a class="btn g" target="_blank" rel="noopener" href="https://wa.me/?text='+encodeURIComponent(msg)+'">Envoyer sur WhatsApp</a><button class="btn y" onclick="copyLink()">Copier mon lien</button></div>');
+    }
+  });
+  document.querySelectorAll('#app .mine').forEach(function(m){
+    var mm=/openMine\((\d+)\)/.exec(m.getAttribute('onclick')||'');if(!mm)return;
+    if(soldOut(mineById(+mm[1]))){var s=m.querySelector('span');if(s)s.insertAdjacentHTML('beforeend',' <span class="badge" style="background:#B3261E">Épuisé</span>')}
+  });
+  var cp='<div class="panel"><h2>Changer mon mot de passe</h2><label>Nouveau mot de passe (6 caractères minimum)</label>'+pwBox('cp','••••••')+'<button class="btn g" onclick="changePw()">Changer</button></div>';
+  var del=Array.prototype.filter.call(document.querySelectorAll('#app .panel h2'),function(x){return x.textContent==='Supprimer mon compte'})[0];
+  if(del)del.closest('.panel').insertAdjacentHTML('beforebegin',cp);else $('app').insertAdjacentHTML('beforeend',cp);
+};
+var _ra2=renderAuth;
+renderAuth=function(){
+  _ra2();
+  if(mode==='login'){var p=document.querySelector('#app .panel');if(p)p.insertAdjacentHTML('beforeend','<button class="btn y" onclick="showForgot()">Mot de passe oublié ?</button>')}
+};
+function showForgot(){
+  var num=(PAY_NUM.match(/\d[\d ]{7,}\d/g)||[])[0];
+  var wl=num?'<a class="btn y" target="_blank" rel="noopener" href="'+wa(num,"Bonjour, j'ai oublié mon mot de passe MiamPlace. Mon e-mail : "+(A.email||''))+'">Je ne reçois rien : écrire sur WhatsApp</a>':'';
+  $('app').innerHTML='<div class="panel"><h2>Mot de passe oublié</h2><p style="margin:0">Entre ton e-mail. Tu recevras un lien pour choisir un nouveau mot de passe (regarde aussi tes spams).</p><label>E-mail</label><input type="email" value="'+esc(A.email)+'" oninput="A.email=this.value"><button class="btn g" onclick="sendReset()">Recevoir le lien</button>'+wl+'<button class="btn y" onclick="renderAuth()">Retour</button></div>';
+}
+async function sendReset(){
+  var e=A.email.trim();if(!e){toast('Entre ton e-mail');return}
+  var r=await sb.auth.resetPasswordForEmail(e,{redirectTo:location.origin+location.pathname});
+  toast(r.error?r.error.message:"Si ce compte existe, un e-mail vient d'être envoyé");
+}
+function showNewPw(){
+  view='space';$('tF').className='';$('tS').className='on';
+  $('app').innerHTML='<div class="panel"><h2>Nouveau mot de passe</h2><p style="margin:0">Choisis un nouveau mot de passe (6 caractères minimum).</p><label>Nouveau mot de passe</label>'+pwBox('np','••••••')+'<button class="btn g" onclick="saveNewPw()">Enregistrer</button><button class="btn y" onclick="cancelRecov()">Annuler</button></div>';
+}
+async function saveNewPw(){
+  var v=($('np')||{}).value||'';
+  if(v.length<6){toast('6 caractères minimum');return}
+  var r=await sb.auth.updateUser({password:v});
+  if(r.error){toast(r.error.message);return}
+  window._recov=false;history.replaceState(null,'',location.pathname+location.search);
+  toast('Mot de passe changé');
+  var s=await sb.auth.getSession();
+  if(s.data.session){me=s.data.session.user;await loadMe();go('space')}else go('feed');
+}
+function cancelRecov(){window._recov=false;history.replaceState(null,'',location.pathname+location.search);go('feed')}
+sb.auth.onAuthStateChange(function(ev){if(ev==='PASSWORD_RECOVERY'){window._recov=true;setTimeout(showNewPw,200)}});  
 </script></body></html>
 
