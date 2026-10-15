@@ -504,5 +504,16 @@ renderSpace=function(){
   document.head.appendChild(st);
 })(); 
 (function(){var s=document.createElement('style');s.textContent='header{position:sticky!important;top:8px!important;z-index:4;padding:8px 14px!important;margin:0 0 14px!important;border-radius:26px!important;background:color-mix(in srgb,var(--bg) 78%,transparent)!important;backdrop-filter:blur(10px)!important;-webkit-backdrop-filter:blur(10px)!important;box-shadow:0 6px 18px rgba(43,27,75,.12)}';document.head.appendChild(s)})();  
+function becomeSeller(){if(!me)mode='signup';go('space')}
+var _rf2=renderFeed;
+renderFeed=function(){
+  _rf2();
+  $('app').insertAdjacentHTML('beforeend','<div class="panel" style="margin-top:18px;text-align:center"><h2>Tu vends de bons plats ?</h2><p style="margin:6px 0 0">Publie tes annonces avec photo et prix. Les clients de ton quartier t\'écrivent directement sur WhatsApp.</p><p style="margin:10px 0 0"><span class="badge">7 jours gratuits, puis 100 XAF par jour</span></p><button class="btn g" onclick="becomeSeller()">Devenir vendeur</button></div>');
+};
+(function(){
+  var num=(PAY_NUM.match(/\d[\d ]{7,}\d/g)||[])[0];
+  var help=num?'<a class="btn g" style="max-width:360px;margin:14px auto 0" target="_blank" rel="noopener" href="'+wa(num,"Bonjour, j'ai besoin d'aide sur MiamPlace.")+'">Besoin d\'aide ? Écris-nous sur WhatsApp</a>':'';
+  document.querySelector('main').insertAdjacentHTML('beforeend','<footer style="margin-top:22px;padding:20px 18px 18px;border-radius:24px;background:var(--card);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);box-shadow:var(--sh);text-align:center"><div class="logo" style="font-size:24px">Miam<span>Place</span></div><p style="margin:8px auto 0;max-width:420px;opacity:.85">Les plats des vendeurs près de chez toi, avec photo et prix. Tu choisis, puis tu écris au vendeur sur WhatsApp.</p>'+help+'<p style="margin:14px 0 0;font-size:13px;opacity:.7">© '+new Date().getFullYear()+' MiamPlace</p></footer><div style="height:70px"></div>');
+})();
 </script></body></html>
 
